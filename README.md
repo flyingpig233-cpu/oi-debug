@@ -20,7 +20,7 @@ int main() {
 ```
 
 ### 输出
-```
+```c++
 int a = 114514
 std::pair<double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > p = (3.1415926535897, "PI")
 int [2][2][2] arr = [[[0, 0], [0, 0]], [[0, 0], [0, 0]]]
