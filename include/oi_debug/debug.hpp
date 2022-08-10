@@ -6,6 +6,7 @@
 #include <iostream>
 #include <queue>
 
+#define debug_with_type(var) _debug_with_type((var), (#var))
 #define debug(var) _debug((var), (#var))
 
 template <typename T> std::string type_name() {
@@ -20,12 +21,17 @@ template <typename T> std::string type_name() {
     return tname;
 }
 
-template <typename T> void _debug(T &t, const char *var_name) {
+template <typename T> void _debug_with_type(T &t, const char *var_name) {
     std::cout << type_name<T>() << " " << var_name << " = "
               << oi_debug::to_string(t) << std::endl;
 }
 
-template <typename T> void _debug(std::queue<T> q, const char *var_name) {
+template <typename T> void _debug(T &t, const char *var_name) {
+    std::cout << var_name << " = "
+              << oi_debug::to_string(t) << std::endl;
+}
+
+template <typename T> void _debug_with_type(std::queue<T> q, const char *var_name) {
     std::cout << "std::queue<" << type_name<T>() << "> " << var_name << " = [";
     while (!q.empty()) {
         std::cout << oi_debug::quoted_if_string(q.front());
