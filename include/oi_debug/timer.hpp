@@ -27,8 +27,8 @@ class Timer {
     }
 };
 
-template <class callable, class... Args>
-void _get_time(callable &&f, const char *func_name, Args &&...args) {
+template <class dur, class callable,  class... Args>
+void _get_time(const char* postfix, callable &&f, const char *func_name, Args &&...args) {
     using return_type = typename std::result_of<callable(Args...)>::type;
     std::function<return_type(Args...)> func = f;
 
@@ -36,32 +36,34 @@ void _get_time(callable &&f, const char *func_name, Args &&...args) {
     if constexpr (!std::is_same_v<return_type, void>) {
         auto return_val = func(std::forward<Args&&>(args)...);
         auto end_time = std::chrono::system_clock::now();
-        auto spend_time = std::chrono::duration_cast<std::chrono::microseconds>(
+        auto spend_time = std::chrono::duration_cast<dur>(
             end_time - start_time);
         int status;
         char *func_type =
             abi::__cxa_demangle(typeid(callable).name(), NULL, NULL, &status);
         if (status == 0) {
-            printf("call %s<%s> spent %ldus, return value: %s\n", func_name, func_type, spend_time, oi_debug::to_string(return_val).c_str());
+            printf("call %s<%s> spent %ld%s, return value: %s\n", func_name, func_type, spend_time, postfix, oi_debug::to_string(return_val).c_str());
         } else {
             fprintf(stderr, "Eh...something error");
         }
     } else {
         func(std::forward<Args&&>(args)...);
         auto end_time = std::chrono::system_clock::now();
-        auto spend_time = std::chrono::duration_cast<std::chrono::microseconds>(
+        auto spend_time = std::chrono::duration_cast<dur>(
             end_time - start_time);
         int status;
         char *func_type =
             abi::__cxa_demangle(typeid(callable).name(), NULL, NULL, &status);
         if (status == 0) {
-            printf("call %s<%s> spent () %ldus\n", func_name, func_type, spend_time);
+            printf("call %s<%s> spent () %ld%s\n", func_name, func_type, spend_time, postfix);
         } else {
             fprintf(stderr, "Eh...something error");
         }
     }
 }
 
-#define get_time(fn, ...) _get_time((fn), (#fn), (__VA_ARGS__))
+#define get_time_us(fn, ...) _get_time<std::chrono::microseconds>("us", (fn), (#fn), (__VA_ARGS__))
+#define get_time_ms(fn, ...) _get_time<std::chrono::milliseconds>("ms", (fn), (#fn), (__VA_ARGS__))
+#define get_time_s(fn, ...) _get_time<std::chrono::seconds>("s", (fn), (#fn), (__VA_ARGS__))
 
 #endif //_BGHELPER_TIMER_H__
