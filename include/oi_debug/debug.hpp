@@ -1,7 +1,7 @@
 #ifndef _DEBUG__
 #define _DEBUG__
 
-#include <bg_helper/output.hpp>
+#include "to_string.hpp"
 #include <cxxabi.h>
 #include <iostream>
 #include <queue>
@@ -22,15 +22,16 @@ template <typename T> std::string type_name() {
 
 template <typename T> void _debug(T &t, const char *var_name) {
     std::cout << type_name<T>() << " " << var_name << " = "
-              << bg_helper::to_string(t) << std::endl;
+              << oi_debug::to_string(t) << std::endl;
 }
 
 template <typename T> void _debug(std::queue<T> q, const char *var_name) {
     std::cout << "std::queue<" << type_name<T>() << "> " << var_name << " = [";
     while (!q.empty()) {
-        std::cout << bg_helper::quoted_if_string(q.front());
+        std::cout << oi_debug::quoted_if_string(q.front());
         q.pop();
-        if (!q.empty()) std::cout << ", ";
+        if (!q.empty())
+            std::cout << ", ";
     }
     std::cout << "]" << std::endl;
 }
