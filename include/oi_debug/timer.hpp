@@ -28,7 +28,7 @@ class Timer {
 };
 
 template <class callable, class... Args>
-void get_time(callable &&f, Args &&...args) {
+void _get_time(callable &&f, const char *func_name, Args &&...args) {
     using return_type = typename std::result_of<callable(Args...)>::type;
     std::function<return_type(Args...)> func = f;
 
@@ -39,10 +39,10 @@ void get_time(callable &&f, Args &&...args) {
         auto spend_time = std::chrono::duration_cast<std::chrono::microseconds>(
             end_time - start_time);
         int status;
-        char *func_name =
+        char *func_type =
             abi::__cxa_demangle(typeid(callable).name(), NULL, NULL, &status);
         if (status == 0) {
-            printf("call %s spent %ldus, return value: %s\n", func_name, spend_time, oi_debug::to_string(return_val).c_str());
+            printf("call %s<%s> spent %ldus, return value: %s\n", func_name, func_type, spend_time, oi_debug::to_string(return_val).c_str());
         } else {
             fprintf(stderr, "Eh...something error");
         }
@@ -52,14 +52,16 @@ void get_time(callable &&f, Args &&...args) {
         auto spend_time = std::chrono::duration_cast<std::chrono::microseconds>(
             end_time - start_time);
         int status;
-        char *func_name =
+        char *func_type =
             abi::__cxa_demangle(typeid(callable).name(), NULL, NULL, &status);
         if (status == 0) {
-            printf("call %s spent () %ldus\n", func_name, spend_time);
+            printf("call %s<%s> spent () %ldus\n", func_name, func_type, spend_time);
         } else {
             fprintf(stderr, "Eh...something error");
         }
     }
 }
+
+#define get_time(fn, ...) _get_time((fn), (#fn), (__VA_ARGS__))
 
 #endif //_BGHELPER_TIMER_H__
