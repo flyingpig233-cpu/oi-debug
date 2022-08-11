@@ -1,8 +1,9 @@
 #include "debug.hpp"
+#include "timer.hpp"
 #include <bits/stdc++.h>
 
 int main() {
-
+    auto func = [&]() {
     std::cout << "=========Without type=========" << std::endl;
     std::vector<std::string> strs {"Hello", ",", " world!"};
     debug(strs);
@@ -20,4 +21,6 @@ int main() {
     debug_with_type(m);
     debug_with_type(ok);
     std::cout << "==============================" << std::endl;
+    };
+    get_time_us(func);
 }

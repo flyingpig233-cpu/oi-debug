@@ -28,7 +28,7 @@ class Timer {
 };
 
 template <class dur, class callable,  class... Args>
-void _get_time(const char* postfix, callable &&f, const char *func_name, Args &&...args) {
+void _get_time(const char *postfix, const char *func_name, callable &&f, Args &&...args) {
     using return_type = typename std::result_of<callable(Args...)>::type;
     std::function<return_type(Args...)> func = f;
 
@@ -56,14 +56,14 @@ void _get_time(const char* postfix, callable &&f, const char *func_name, Args &&
             abi::__cxa_demangle(typeid(callable).name(), NULL, NULL, &status);
         if (status == 0) {
             printf("call %s<%s> spent () %ld%s\n", func_name, func_type, spend_time, postfix);
+            free(func_type);
         } else {
             fprintf(stderr, "Eh...something error");
         }
     }
 }
-
-#define get_time_us(fn, ...) _get_time<std::chrono::microseconds>("us", (fn), (#fn), (__VA_ARGS__))
-#define get_time_ms(fn, ...) _get_time<std::chrono::milliseconds>("ms", (fn), (#fn), (__VA_ARGS__))
-#define get_time_s(fn, ...) _get_time<std::chrono::seconds>("s", (fn), (#fn), (__VA_ARGS__))
+#define get_time_us(fn, ...) _get_time<std::chrono::microseconds>("us", #fn, (fn), ##__VA_ARGS__)
+#define get_time_ms(fn, ...) _get_time<std::chrono::milliseconds>("ms", #fn, (fn), ##__VA_ARGS__)
+#define get_time_s(fn, ...) _get_time<std::chrono::seconds>("s", #fn, (fn), ##__VA_ARGS__)
 
 #endif //_BGHELPER_TIMER_H__
