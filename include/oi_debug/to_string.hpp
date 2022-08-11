@@ -79,6 +79,8 @@ _to_string(const std::pair<T, E> &value,
         quoted_if_string<char_type_t>(value.second), brakets(1));
 }
 
+// for float double
+
 template <Character char_type_t = oi_debug::char_type>
 constexpr std::basic_string<char_type_t>
 _to_string(const double &value) noexcept {
@@ -91,10 +93,14 @@ _to_string(const double &value) noexcept {
     }
 }
 
+// for bool
+
 template <Character char_type_t = oi_debug::char_type, Boolean T>
 constexpr std::basic_string<char_type_t> _to_string(const T value) noexcept {
     return true_false<char_type_t>(value);
 }
+
+// for map
 
 template <Character char_type_t = oi_debug::char_type, Map T>
 std::basic_string<char_type_t> _to_string(const T &value) noexcept {
@@ -116,7 +122,25 @@ std::basic_string<char_type_t> _to_string(const T &value) noexcept {
     return buffer;
 }
 
-template <Character char_type_t = oi_debug::char_type, std::ranges::range T>
+// for FIFO Container (like std::queue)
+
+template <Character char_type_t = oi_debug::char_type, FIFO_Container T>
+[[nodiscard]] std::basic_string<char_type_t> _to_string(T value) noexcept {
+    std::basic_string<char_type_t> buffer;
+    buffer.append(square_brakets<char_type_t>(0));
+    while (!value.empty()) {
+        buffer.append(quoted_if_string<char_type_t>(value.front()));
+        value.pop();
+        if (!value.empty())
+            buffer.append(comma<char_type_t>());
+    }
+    buffer.append(square_brakets<char_type_t>(1));
+    return buffer;
+}
+
+// for container (need begin() and end())
+
+template <Character char_type_t = oi_debug::char_type, Iterable T>
 [[nodiscard]] std::enable_if_t<!String<T> && !Map<T>,
                                std::basic_string<char_type_t>>
 _to_string(const T &value) noexcept {
@@ -134,6 +158,17 @@ _to_string(const T &value) noexcept {
         buffer.erase(buffer.size() - comma<char_type_t>().size());
     buffer.append(square_brakets<char_type_t>(1));
     return buffer;
+}
+
+// for LIFO Container (like stack)
+template <Character char_type_t = oi_debug::char_type, LIFO_Container T>
+[[nodiscard]] std::basic_string<char_type_t> _to_string(T value) noexcept {
+    std::vector<typename T::value_type> v;
+    while (!value.empty()) {
+        v.push_back(value.top());
+        value.pop();
+    }
+    return to_string<char_type_t>(v);
 }
 
 template <Character char_type_t, typename T, size_t N> struct tuple_to_string {

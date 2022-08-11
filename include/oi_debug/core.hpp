@@ -3,7 +3,6 @@
 
 #include <array>
 #include <concepts>
-#include <ranges>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -35,7 +34,25 @@ concept has_to_string = requires(T &a) {
 };
 
 template <typename T>
-concept Map = std::ranges::range<T> && requires(T a) {
+concept Iterable = requires(T &a) {
+    a.begin();
+    a.end();
+};
+
+template <typename T>
+concept FIFO_Container = !Iterable<T> && requires(T & a) {
+    a.pop();
+    a.front();
+};
+
+template <typename T>
+concept LIFO_Container = !FIFO_Container<T> && requires(T & a) {
+    a.top();
+    a.pop();
+};
+
+template <typename T>
+concept Map = Iterable<T> && requires(T &a) {
     typename std::decay_t<T>::key_type;
     typename std::decay_t<T>::mapped_type;
 };
