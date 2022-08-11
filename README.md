@@ -41,9 +41,9 @@ ok = true
 ==============================
 
 =========With type=========
-std::vector<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > > strs = ["Hello", ",", " world!"]
-std::tuple<int, double, std::vector<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > > > tup = (114514, 3.1415926535897, ["Hello", ",", " world!"])
-std::map<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, int, std::less<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, int> > > m = {"America": 2, "China": 1, "Rossia": 3}
+std::vector<std::string> strs = ["Hello", ",", " world!"]
+std::tuple<int, double, std::vector<std::string>> tup = (114514, 3.1415926535897, ["Hello", ",", " world!"])
+std::map<std::string, int> m = {"America": 2, "China": 1, "Rossia": 3}
 bool ok = true
 ==============================
 
