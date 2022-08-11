@@ -2,28 +2,51 @@
 一套代码debug库，方便查看和调试变量
 
 ## 预览
-### 示例代码
+### 示例代码(在`./include/oi_debug/test.cpp`)
 
 ```c++
-#include "oi_debug/debug.hpp"
+#include "debug.hpp"
 #include <bits/stdc++.h>
 
-int arr[2][2][2];
-
 int main() {
-    int a = 114514;
-    std::pair<double, std::string> p(3.1415926535897, "PI");
-    debug(a);
-    debug(p)
-    debug(arr);
+
+    std::cout << "=========Without type=========" << std::endl;
+    std::vector<std::string> strs {"Hello", ",", " world!"};
+    debug(strs);
+    std::tuple<int, double, std::vector<std::string>> tup(114514, 3.1415926535897, strs);
+    debug(tup);
+    std::map<std::string, int> m { {"China", 1}, {"America", 2}, {"Rossia", 3} };
+    debug(m);
+    bool ok = true;
+    debug(ok);
+    std::cout << "==============================" << std::endl;
+    std::cout << std::endl;
+    std::cout << "=========With type=========" << std::endl;
+    debug_with_type(strs);
+    debug_with_type(tup);
+    debug_with_type(m);
+    debug_with_type(ok);
+    std::cout << "==============================" << std::endl;
 }
+
 ```
 
 ### 输出
 ```c++
-int a = 114514
-std::pair<double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > p = (3.1415926535897, "PI")
-int [2][2][2] arr = [[[0, 0], [0, 0]], [[0, 0], [0, 0]]]
+=========Without type=========
+strs = ["Hello", ",", " world!"]
+tup = (114514, 3.1415926535897, ["Hello", ",", " world!"])
+m = {"America": 2, "China": 1, "Rossia": 3}
+ok = true
+==============================
+
+=========With type=========
+std::vector<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > > strs = ["Hello", ",", " world!"]
+std::tuple<int, double, std::vector<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > > > tup = (114514, 3.1415926535897, ["Hello", ",", " world!"])
+std::map<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, int, std::less<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, int> > > m = {"America": 2, "China": 1, "Rossia": 3}
+bool ok = true
+==============================
+
 ```
 
 ## 特点
@@ -44,7 +67,7 @@ int [2][2][2] arr = [[[0, 0], [0, 0]], [[0, 0], [0, 0]]]
 本代码使用了`concept`等只有**C++20**及以上版本才支持的新特性，在编译代码时必须加上`-std=c++20`选项
 
 ## 警告
-本库目前仅支持`GCC`编译器（原因是调用了GCC的ABI来获取变量名）
+本库目前不支持`MSVC`编译器（原因是调用了`CXXABI`库来获取变量名）
 
 ## 贡献
 如果您对这个库满意的话，可以留下您的star哦，希望能帮到您～

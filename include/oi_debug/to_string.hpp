@@ -6,6 +6,7 @@
 #include "string_concat.hpp"
 #include <iomanip>
 #include <string>
+#include <tuple>
 #include <type_traits>
 #include <vector>
 
@@ -169,6 +170,8 @@ template <Character char_type_t = oi_debug::char_type, LIFO_Container T>
     }
     return to_string<char_type_t>(v);
 }
+
+// for tuple
 
 template <Character char_type_t, typename T, size_t N> struct tuple_to_string {
     static void to_string(const T &tup, std::basic_string<char_type_t> &buff);
