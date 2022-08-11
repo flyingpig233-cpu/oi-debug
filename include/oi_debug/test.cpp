@@ -8,7 +8,7 @@ int main() {
     debug(strs);
     std::tuple<int, double, std::vector<std::string>> tup(114514, 3.1415926535897, strs);
     debug(tup);
-    std::map<std::string, int> m { {"China", 1}, {"America", 2}, {"Rossia", 3} };
+    std::map<std::string, int> m { {"China", 1}, {"America", 2}, {"Russia", 3} };
     debug(m);
     bool ok = true;
     debug(ok);

@@ -15,7 +15,7 @@ int main() {
     debug(strs);
     std::tuple<int, double, std::vector<std::string>> tup(114514, 3.1415926535897, strs);
     debug(tup);
-    std::map<std::string, int> m { {"China", 1}, {"America", 2}, {"Rossia", 3} };
+    std::map<std::string, int> m { {"China", 1}, {"America", 2}, {"Russia", 3} };
     debug(m);
     bool ok = true;
     debug(ok);
@@ -36,14 +36,14 @@ int main() {
 =========Without type=========
 strs = ["Hello", ",", " world!"]
 tup = (114514, 3.1415926535897, ["Hello", ",", " world!"])
-m = {"America": 2, "China": 1, "Rossia": 3}
+m = {"America": 2, "China": 1, "Russia": 3}
 ok = true
 ==============================
 
 =========With type=========
 std::vector<std::string> strs = ["Hello", ",", " world!"]
 std::tuple<int, double, std::vector<std::string>> tup = (114514, 3.1415926535897, ["Hello", ",", " world!"])
-std::map<std::string, int> m = {"America": 2, "China": 1, "Rossia": 3}
+std::map<std::string, int> m = {"America": 2, "China": 1, "Russia": 3}
 bool ok = true
 ==============================
 
