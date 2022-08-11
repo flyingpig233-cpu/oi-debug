@@ -5,6 +5,7 @@
 #include <array>
 #include <cxxabi.h>
 #include <list>
+#include <map>
 #include <queue>
 #include <stack>
 #include <string>
@@ -22,6 +23,14 @@ template <typename T> struct TypeParseTraits {
             std::free(demangled_name);
         }
         return tname;
+    }
+};
+
+template <typename Key, typename T> struct TypeParseTraits<std::map<Key, T>> {
+    constexpr static std::string get_name() {
+        return oi_debug::connect("std::map<", TypeParseTraits<Key>::get_name(),
+                                 oi_debug::comma<char>(),
+                                 TypeParseTraits<T>::get_name(), ">");
     }
 };
 
