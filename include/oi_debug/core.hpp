@@ -81,7 +81,7 @@ constexpr const std::basic_string<char_type_t> curly_braces(bool i) {
 }
 
 template <Character char_type_t = oi_debug::char_type>
-constexpr const std::basic_string<char_type_t> square_brakets(bool i) {
+constexpr const std::basic_string<char_type_t> square_brackets(bool i) {
     if constexpr (std::is_same_v<char_type_t, wchar_t>)
         return i ? L"]" : L"[";
     else
@@ -89,7 +89,7 @@ constexpr const std::basic_string<char_type_t> square_brakets(bool i) {
 }
 
 template <Character char_type_t = oi_debug::char_type>
-constexpr const std::basic_string<char_type_t> brakets(bool i) {
+constexpr const std::basic_string<char_type_t> brackets(bool i) {
     if constexpr (std::is_same_v<char_type_t, wchar_t>)
         return i ? L")" : L"(";
     else
@@ -118,6 +118,16 @@ constexpr const std::basic_string<char_type_t> double_quotes() {
     else
         return "\"";
 }
+
+template <Character char_type_t = oi_debug::char_type>
+constexpr char_type_t digit(size_t i) {
+    if constexpr (std::is_same_v<char_type_t, wchar_t>) {
+        return L"0123456789ABCDEF"[i & 0xF];
+    } else {
+        return "0123456789ABCDEF"[i & 0xF];
+    }
+}
+
 } // namespace oi_debug
 
 #endif //_OIDEBUG_CORE_H__

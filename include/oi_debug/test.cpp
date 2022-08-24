@@ -13,6 +13,7 @@ int main() {
     debug(m);
     bool ok = true;
     debug(ok);
+    debug(&ok);
     std::cout << "==============================" << std::endl;
     std::cout << std::endl;
     std::cout << "=========With type=========" << std::endl;

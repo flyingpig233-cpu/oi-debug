@@ -10,7 +10,7 @@ namespace oi_debug {
 
 /**
  * Summary: connect strings
- * Paramters:
+ * Parameters:
  *     v: strings to concatenate
  * Example:
  *     connect("A", "B", "C") --> "ABC"
