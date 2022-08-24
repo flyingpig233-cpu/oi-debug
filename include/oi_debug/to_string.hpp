@@ -15,13 +15,14 @@ namespace oi_debug {
 
 template <Character char_type = oi_debug::char_type, std::integral T>
 [[nodiscard]] inline std::basic_string<char_type> hex(T value) noexcept {
+  const size_t h_len = sizeof(T) << 1;
   if (value > 0xF) {
     T temp{};
-    char buffer[sizeof(T) * 2]{};
-    std::uint8_t i{sizeof(T) * 2 - 1};
+    char buffer[h_len]{};
+    std::uint8_t i{h_len - 1};
 
     while (value >= 16) {
-      temp = value % 16;
+      temp = value & 0xF;
       value >>= 4;
       buffer[i--] = digit(temp);
     }
@@ -35,21 +36,21 @@ template <Character char_type = oi_debug::char_type, std::integral T>
 }
 
 template <Character char_type_t, typename T>
-[[nodiscard]] std::basic_string<char_type_t> quoted_if_string(const T &value);
+[[nodiscard]] constexpr inline std::basic_string<char_type_t> quoted_if_string(const T &value);
 
 template <Character char_type_t, typename T>
-[[nodiscard]] constexpr std::basic_string<char_type_t>
+[[nodiscard]] constexpr inline std::basic_string<char_type_t>
 to_string(const T &value);
 
 template <Character char_type_t = oi_debug::char_type,
           std::convertible_to<std::basic_string_view<char_type_t>> T>
-[[nodiscard]] constexpr std::basic_string<char_type_t>
+[[nodiscard]] constexpr inline std::basic_string<char_type_t>
 _to_string(const T &value) noexcept {
   return std::basic_string<char_type_t>(value);
 }
 
 template <Character char_type_t = oi_debug::char_type, has_to_string T>
-[[nodiscard]] constexpr std::basic_string<char_type_t>
+[[nodiscard]] constexpr inline std::basic_string<char_type_t>
 _to_string(T &t) noexcept {
   return t.to_string();
 }
@@ -57,7 +58,7 @@ _to_string(T &t) noexcept {
 template <Character char_type_t = oi_debug::char_type, std::integral T,
           typename = std::enable_if_t<!Boolean<T> && !Character<T>,
                                       std::basic_string<char_type_t>>>
-[[nodiscard]] constexpr std::basic_string<char_type_t>
+[[nodiscard]] constexpr inline std::basic_string<char_type_t>
 _to_string(const T &value) noexcept {
   if constexpr (std::is_same_v<wchar_t, char_type_t>) {
     return std::to_wstring(value);
@@ -66,14 +67,14 @@ _to_string(const T &value) noexcept {
   }
 }
 template <Character char_type_t = oi_debug::char_type>
-[[nodiscard]] constexpr std::basic_string<char_type_t>
+[[nodiscard]] constexpr inline std::basic_string<char_type_t>
 _to_string(const char_type_t &value) noexcept {
   char_type_t c[2]{value, 0};
   return std::basic_string<char_type_t>(c);
 }
 
 template <Character char_type_t = oi_debug::char_type>
-[[nodiscard]] constexpr std::basic_string<char_type_t>
+[[nodiscard]] constexpr inline std::basic_string<char_type_t>
 _to_string(const float &value) noexcept {
   if constexpr (std::is_same_v<wchar_t, char_type_t>) {
     return std::to_wstring(value);
@@ -82,15 +83,15 @@ _to_string(const float &value) noexcept {
   }
 }
 // for pointer
-template <Character char_type_t = oi_debug::char_type, typename T>
-[[nodiscard]] constexpr std::basic_string<char_type_t>
-_to_string(const T *pointer) noexcept {
+template <Character char_type_t = oi_debug::char_type>
+[[nodiscard]] constexpr inline std::basic_string<char_type_t>
+_to_string(const void *pointer) noexcept {
   return hex<char_type_t>(reinterpret_cast<std::uintptr_t>(pointer));
 }
 
 // for c style array
 template <Character char_type_t = oi_debug::char_type, typename T, size_t N>
-[[nodiscard]] std::basic_string<char_type_t> _to_string(const T (&arr)[N]) {
+[[nodiscard]] std::enable_if_t<String<T>, std::basic_string<char_type_t>> _to_string(const T (&arr)[N]) {
   std::basic_string<char_type_t> buff;
   buff.append(square_brackets<char_type_t>(0));
   for (size_t i = 0; i < N - 1; ++i) {
@@ -220,8 +221,7 @@ struct tuple_to_string<char_type_t, T, 1> {
 };
 
 template <Character char_type_t = oi_debug::char_type, typename... Args>
-[[nodiscard]] __attribute__((
-    always_inline)) inline std::basic_string<char_type_t>
+[[nodiscard]] __FORCE_INLINE__ inline std::basic_string<char_type_t>
 _to_string(const std::tuple<Args...> &value) {
   constexpr size_t size = sizeof...(Args);
   static_assert(size < 10, "too large tuple!!!");
@@ -258,7 +258,7 @@ _to_string(std::basic_string<char_type_t> &&value) noexcept {
 }
 
 template <Character char_type_t = oi_debug::char_type, typename T>
-[[nodiscard]] constexpr std::basic_string<char_type_t>
+[[nodiscard]] constexpr inline std::basic_string<char_type_t>
 to_string(const T &value) {
   constexpr bool ok = convertible<char_type_t, T>;
   if constexpr (ok) {
@@ -266,12 +266,12 @@ to_string(const T &value) {
   } else {
     // error
     static_assert(ok, "some types could not convert");
-    return comma<char_type_t>();
+    return nullptr;
   }
 }
 
 template <Character char_type_t = oi_debug::char_type, typename T>
-[[nodiscard]] std::basic_string<char_type_t> inline quoted_if_string(
+[[nodiscard]] std::basic_string<char_type_t>  constexpr inline quoted_if_string(
     const T &value) {
   if constexpr (String<T>) {
     return oi_debug::quoted<char_type_t>(

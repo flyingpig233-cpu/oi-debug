@@ -35,7 +35,7 @@ void _get_time(const char *postfix, const char *func_name, callable &&f, Args &&
     auto start_time = std::chrono::system_clock::now();
     if constexpr (!std::is_same_v<return_type, void>) {
         auto return_val = func(std::forward<Args&&>(args)...);
-        auto end_time = std::chrono::system_clock::now();
+        auto end_time = std::chrono::high_resolution_clock::now();
         auto spend_time = std::chrono::duration_cast<dur>(
             end_time - start_time);
         int status;
@@ -55,7 +55,7 @@ void _get_time(const char *postfix, const char *func_name, callable &&f, Args &&
         char *func_type =
             abi::__cxa_demangle(typeid(callable).name(), NULL, NULL, &status);
         if (status == 0) {
-            printf("call %s<%s> spent () %ld%s\n", func_name, func_type, spend_time, postfix);
+            printf("call %s<%s> spent %ld%s\n", func_name, func_type, spend_time, postfix);
             free(func_type);
         } else {
             fprintf(stderr, "Eh...something error");

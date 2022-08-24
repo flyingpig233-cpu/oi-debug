@@ -9,6 +9,8 @@
 
 namespace oi_debug {
 
+#define __FORCE_INLINE__ __attribute__((always_inline))
+
 #ifdef UNICODE
 using char_type = wchar_t;
 #else
@@ -120,11 +122,19 @@ constexpr const std::basic_string<char_type_t> double_quotes() {
 }
 
 template <Character char_type_t = oi_debug::char_type>
+constexpr const std::basic_string<char_type_t> new_line() {
+    if constexpr (std::is_same_v<char_type_t, wchar_t>)
+        return L"\n";
+    else
+        return "\n";
+}
+
+template <Character char_type_t = oi_debug::char_type>
 constexpr char_type_t digit(size_t i) {
     if constexpr (std::is_same_v<char_type_t, wchar_t>) {
-        return L"0123456789ABCDEF"[i & 0xF];
+        return L"0123456789abcdef"[i & 0xF];
     } else {
-        return "0123456789ABCDEF"[i & 0xF];
+        return "0123456789abcdef"[i & 0xF];
     }
 }
 
