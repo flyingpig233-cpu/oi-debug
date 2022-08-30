@@ -86,7 +86,7 @@ _to_string(const float &value) noexcept {
 template <Character char_type_t = oi_debug::char_type>
 [[nodiscard]] constexpr inline std::basic_string<char_type_t>
 _to_string(const void *pointer) noexcept {
-  return hex<char_type_t>(reinterpret_cast<std::uintptr_t>(pointer));
+  return connect<char_type_t>("0x", hex<char_type_t>(reinterpret_cast<std::uintptr_t>(pointer)));
 }
 
 // for c style array

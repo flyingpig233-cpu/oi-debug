@@ -60,14 +60,14 @@ concept Map = Iterable<T> && requires(T &a) {
 };
 
 template <Character char_type_t = oi_debug::char_type>
-constexpr const std::basic_string<char_type_t> colon() {
+consteval const std::basic_string_view<char_type_t> colon() {
     if constexpr (std::is_same_v<char_type_t, wchar_t>)
         return L": ";
     else
         return ": ";
 }
 template <Character char_type_t = oi_debug::char_type>
-constexpr const std::basic_string<char_type_t> comma() {
+consteval const std::basic_string_view<char_type_t> comma() {
     if constexpr (std::is_same_v<char_type_t, wchar_t>)
         return L", ";
     else
@@ -75,7 +75,7 @@ constexpr const std::basic_string<char_type_t> comma() {
 }
 
 template <Character char_type_t = oi_debug::char_type>
-constexpr const std::basic_string<char_type_t> curly_braces(bool i) {
+consteval const std::basic_string_view<char_type_t> curly_braces(bool i) {
     if constexpr (std::is_same_v<char_type_t, wchar_t>)
         return i ? L"}" : L"{";
     else
@@ -83,7 +83,7 @@ constexpr const std::basic_string<char_type_t> curly_braces(bool i) {
 }
 
 template <Character char_type_t = oi_debug::char_type>
-constexpr const std::basic_string<char_type_t> square_brackets(bool i) {
+consteval const std::basic_string_view<char_type_t> square_brackets(bool i) {
     if constexpr (std::is_same_v<char_type_t, wchar_t>)
         return i ? L"]" : L"[";
     else
@@ -91,7 +91,7 @@ constexpr const std::basic_string<char_type_t> square_brackets(bool i) {
 }
 
 template <Character char_type_t = oi_debug::char_type>
-constexpr const std::basic_string<char_type_t> brackets(bool i) {
+consteval const std::basic_string_view<char_type_t> brackets(bool i) {
     if constexpr (std::is_same_v<char_type_t, wchar_t>)
         return i ? L")" : L"(";
     else
@@ -107,14 +107,14 @@ constexpr const std::basic_string<char_type_t> true_false(bool i) {
 }
 
 template <Character char_type_t = oi_debug::char_type>
-constexpr const std::basic_string<char_type_t> quotes() {
+consteval const std::basic_string_view<char_type_t> quotes() {
     if constexpr (std::is_same_v<char_type_t, wchar_t>)
         return L"'";
     else
         return "'";
 }
 template <Character char_type_t = oi_debug::char_type>
-constexpr const std::basic_string<char_type_t> double_quotes() {
+consteval const std::basic_string_view<char_type_t> double_quotes() {
     if constexpr (std::is_same_v<char_type_t, wchar_t>)
         return L"\"";
     else
@@ -122,7 +122,7 @@ constexpr const std::basic_string<char_type_t> double_quotes() {
 }
 
 template <Character char_type_t = oi_debug::char_type>
-constexpr const std::basic_string<char_type_t> new_line() {
+consteval const std::basic_string_view<char_type_t> new_line() {
     if constexpr (std::is_same_v<char_type_t, wchar_t>)
         return L"\n";
     else

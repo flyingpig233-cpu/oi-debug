@@ -25,6 +25,13 @@ template <Character char_type_t = oi_debug::char_type, typename... Args>
 	return buffer;
 }
 
+/**
+ *	Summary: Concatenate arrays with string elements
+ *  Parameters:
+ *     container: the container to concatenate
+ *  Example:
+ *     connect(std::vector<std::string>({"Hello", "World"})) --> "HelloWorld"
+ */
 template <Character char_type_t = oi_debug::char_type,
 		  std::ranges::range Container>
 requires String<typename Container::value_type>
@@ -44,6 +51,14 @@ connect(const Container &container) {
 	return buffer;
 }
 
+/**
+ *	Summary: Bracketing elements
+ *  Parameters:
+ *    v: target element
+ *    c: Inserted characters
+ *  Example:
+ *     quoted("string", "'") --> 'string'
+ */
 template <Character char_type_t = oi_debug::char_type>
 [[nodiscard]] inline std::basic_string<char_type_t>
 quoted(const std::basic_string_view<char_type_t> &v,
