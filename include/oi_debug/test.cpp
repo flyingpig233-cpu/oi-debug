@@ -2,14 +2,12 @@
 
 char tmp[1300001];
 
-class A {
-public:
-    std::string to_string() { return "A"; }
-};
-
-int
-main()
+int main()
 {
     using namespace oi_debug;
-    println(TypeParseTraits<std::vector<std::map<int, int>>>::get_name());
+    std::vector<std::map<int, int>> v {
+      std::map<int, int>{{1, 2}},
+      std::map<int, int>{{3, 5}},
+    };
+    debug_with_type(v);
 }
