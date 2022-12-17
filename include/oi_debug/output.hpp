@@ -9,7 +9,7 @@ namespace oi_debug {
 template <Character char_type_t = oi_debug::char_type, typename T>
 void __FORCE_INLINE__ inline put_elem(const T &elem) {
     auto content = to_string<char_type_t>(elem);
-    fwrite(content.c_str(), 1, content.size(), stdout);
+    fwrite(content.c_str(), sizeof(char_type_t), content.size(), stdout);
 }
 
 template <Character char_type_t = oi_debug::char_type, typename... Args>
