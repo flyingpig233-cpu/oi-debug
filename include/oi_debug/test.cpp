@@ -2,8 +2,14 @@
 
 char tmp[1300001];
 
-int main() {
-  using namespace oi_debug;
-  const char* c = "cc";
-  println(c);
+class A {
+public:
+    std::string to_string() { return "A"; }
+};
+
+int
+main()
+{
+    using namespace oi_debug;
+    println(TypeParseTraits<std::vector<std::map<int, int>>>::get_name());
 }
