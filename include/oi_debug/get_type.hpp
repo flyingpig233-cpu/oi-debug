@@ -42,10 +42,13 @@ struct TypeParseTraits {
         }                                                                      \
     }
 
-#define REGISTER_PARSE_TYPE(X)                                 \
-    template <>                                                \
-    struct TypeParseTraits<X> {                                \
-        consteval static const char* get_name() { return #X; } \
+#define REGISTER_PARSE_TYPE(X)                  \
+    template <>                                 \
+    struct TypeParseTraits<X> {                 \
+        consteval static const char* get_name() \
+        {                                       \
+            return #X;                          \
+        }                                       \
     }
 
 #define REGISTER_PARSE_CONTAINER_TYPE(X)                                           \
@@ -67,8 +70,6 @@ REGISTER_PARSE_TYPE(long long);
 REGISTER_PARSE_TYPE(unsigned long long);
 REGISTER_PARSE_TYPE(float);
 REGISTER_PARSE_TYPE(double);
-REGISTER_PARSE_TYPE(long double);
-REGISTER_PARSE_TYPE(size_t);
 REGISTER_PARSE_CONTAINER_TYPE(std::vector);
 REGISTER_PARSE_CONTAINER_TYPE(std::list);
 REGISTER_PARSE_CONTAINER_TYPE(std::stack);
