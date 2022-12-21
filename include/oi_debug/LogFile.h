@@ -14,7 +14,6 @@ class DebugLog {
         ofstream File;
         clock_t StartTime;
         string GetTime(bool Type);
-        string DoubleToString(double Number);
 
     public:
         DebugLog();
