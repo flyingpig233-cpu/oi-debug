@@ -1,23 +1,14 @@
 #include "LogFile.h"
+#include "to_string.hpp"
 
 #include <fstream>
 #include <string>
 #include <cstring>
 #include <time.h>
 #include <ctime>
-#include <sstream>
 
 using namespace std;
-
-string DebugLog::DoubleToString(double Number){
-    stringstream sTemp;
-    string Result;
-
-    sTemp << Number;
-    sTemp >> Result;
-
-    return Result;
-}
+using namespace oi_debug;
 
 string DebugLog::GetTime(bool Type){
     string Result;
@@ -39,7 +30,7 @@ string DebugLog::GetTime(bool Type){
 
         Time = clock();
         NowTime = (double)(((double)(Time - this->StartTime)) / CLOCKS_PER_SEC);
-        Result = this->DoubleToString(NowTime);
+        Result = to_string(NowTime);
     }
 
     return Result;
