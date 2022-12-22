@@ -1,6 +1,9 @@
 #include "debug.hpp"
-
+#include <map>
 char tmp[1300001];
+
+constexpr std::string_view a = "a";
+constexpr std::string_view b = "b";
 
 int main()
 {

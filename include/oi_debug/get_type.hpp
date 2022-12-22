@@ -18,17 +18,31 @@
 #include <vector>
 
 template <typename T>
+consteval auto describe() noexcept {
+  std::string_view name, prefix, suffix;
+#ifdef __clang__
+  name = __PRETTY_FUNCTION__;
+  prefix = "auto describe() [T = ";
+  suffix = "]";
+#elif defined(__GNUC__)
+  name = __PRETTY_FUNCTION__;
+  prefix = "constexpr auto describe() [with T = ";
+  suffix = "]";
+#elif defined(_MSC_VER)
+  name = __FUNCSIG__;
+  prefix = "auto __cdecl describe<";
+  suffix = ">(void)";
+#endif
+  name.remove_prefix(prefix.size());
+  name.remove_suffix(suffix.size());
+  return name;
+}
+
+template <typename T>
 struct TypeParseTraits {
-    constexpr static std::string get_name()
+    consteval static std::string_view get_name()
     {
-        int status;
-        std::string tname = typeid(T).name();
-        char* demanded_name = abi::__cxa_demangle(tname.c_str(), NULL, NULL, &status);
-        if (status == 0) {
-            tname = demanded_name;
-            std::free(demanded_name);
-        }
-        return tname;
+        return describe<T>();
     }
 };
 #define REGISTER_PARSE_MAP_TYPE(X)                                             \
@@ -45,7 +59,7 @@ struct TypeParseTraits {
 #define REGISTER_PARSE_TYPE(X)                  \
     template <>                                 \
     struct TypeParseTraits<X> {                 \
-        consteval static const char* get_name() \
+        consteval static const std::string_view get_name() \
         {                                       \
             return #X;                          \
         }                                       \
@@ -104,7 +118,5 @@ struct TypeParseTraits<std::tuple<Args...>> {
     }
 };
 
-REGISTER_PARSE_TYPE(std::string);
-REGISTER_PARSE_TYPE(std::wstring);
 
 #endif // _OIDEBUG_GET_TYPE_HPP__
