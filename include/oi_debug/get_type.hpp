@@ -51,7 +51,7 @@ struct TypeParseTraits {
         constexpr static std::string get_name()                                \
         {                                                                      \
             return oi_debug::connect(#X "<", TypeParseTraits<Key>::get_name(), \
-                oi_debug::comma<char>(),                                       \
+                oi_debug::comma(),                                       \
                 TypeParseTraits<T>::get_name(), ">");                          \
         }                                                                      \
     }
@@ -104,7 +104,7 @@ constexpr std::string get_tuple_name(std::index_sequence<I...>)
 {
     std::string buffer;
     buffer.append("std::tuple<");
-    (..., buffer.append(I == 0 ? "" : oi_debug::comma<char>()).append(TypeParseTraits<typename std::tuple_element_t<I, Tuple>>::get_name()));
+    (..., buffer.append(I == 0 ? "" : oi_debug::comma()).append(TypeParseTraits<typename std::tuple_element_t<I, Tuple>>::get_name()));
     buffer.append(">");
     return buffer;
 }

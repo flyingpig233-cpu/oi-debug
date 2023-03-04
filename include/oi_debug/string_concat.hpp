@@ -8,29 +8,6 @@
 
 namespace oi_debug {
 
-template <std::string_view const&... Strs>
-struct join {
-    // Join all strings into a single std::array of chars
-    static consteval auto impl() noexcept
-    {
-        constexpr std::size_t len = (Strs.size() + ... + 0);
-        std::array<char, len + 1> arr {};
-        auto append = [i = 0, &arr](auto const& s) mutable {
-            for (auto c : s)
-                arr[i++] = c;
-        };
-        (append(Strs), ...);
-        arr[len] = 0;
-        return arr;
-    }
-    // Give the joined string static storage
-    static constexpr auto arr = impl();
-    // View as a std::string_view
-    static constexpr std::string_view value { arr.data(), arr.size() - 1 };
-};
-// Helper to get the value out
-template <std::string_view const&... Strs>
-static constexpr auto join_v = join<Strs...>::value;
 
 /**
  * Summary: connect strings
@@ -39,13 +16,13 @@ static constexpr auto join_v = join<Strs...>::value;
  * Example:
  *     connect("A", "B", "C") --> "ABC"
  */
-template <Character char_type_t = oi_debug::char_type, typename... Args>
-[[nodiscard]] constexpr std::basic_string<char_type_t> connect(const Args &...v) {
-	std::basic_string<char_type_t> buffer;
+template <typename... Args>
+[[nodiscard]] constexpr std::string connect(const Args &...v) {
+	std::string buffer;
 	std::size_t size{};
-	((size += std::basic_string_view<char_type_t>(v).size()), ...);
+	((size += std::string_view(v).size()), ...);
 	buffer.reserve(size);
-	((buffer += std::basic_string_view<char_type_t>(v)), ...);
+	((buffer += std::string_view(v)), ...);
 	return buffer;
 }
 
@@ -56,17 +33,17 @@ template <Character char_type_t = oi_debug::char_type, typename... Args>
  *  Example:
  *     connect(std::vector<std::string>({"Hello", "World"})) --> "HelloWorld"
  */
-template <Character char_type_t = oi_debug::char_type,
+template <
 		  std::ranges::range Container>
 requires String<typename Container::value_type>
-[[nodiscard]] std::basic_string<char_type_t>
+[[nodiscard]] std::string
 connect(const Container &container) {
 	size_t size = 0;
 	for (auto &&e : container) {
-		size += e.size();
+		size += std::ranges::size(e);
 	}
 
-	std::basic_string<char_type_t> buffer;
+	std::string buffer;
 	buffer.reserve(size);
 
 	for (auto &&e : container) {
@@ -83,12 +60,11 @@ connect(const Container &container) {
  *  Example:
  *     quoted("string", "'") --> 'string'
  */
-template <Character char_type_t = oi_debug::char_type>
-[[nodiscard]] inline std::basic_string<char_type_t>
-quoted(const std::basic_string_view<char_type_t> &v,
-	   const std::basic_string_view<char_type_t> &c =
-		   double_quotes<char_type_t>()) {
-	return connect<char_type_t>(c, v, c);
+[[nodiscard]] inline std::string
+quoted(const std::string_view &v,
+	   const std::string_view &c =
+		   double_quotes()) {
+	return connect(c, v, c);
 }
 
 } // namespace oi_debug

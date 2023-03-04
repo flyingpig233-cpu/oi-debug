@@ -1,12 +1,17 @@
 #include "debug.hpp"
 #include <map>
-char tmp[1300001];
+int tmp[13];
 
-constexpr std::string_view a = "a";
-constexpr std::string_view b = "b";
+class A {
+public:
+    std::string to_string() const { return "A"; }
+};
 
 int main()
 {
     using namespace oi_debug;
-    println(TypeParseTraits<std::tuple<int, std::time_t, std::vector<std::map<std::pair<int, int>, int>>>>::get_name());
+    std::list<int> l;
+    l.push_back(1);
+    l.push_back(2);
+    debug(a);
 }
