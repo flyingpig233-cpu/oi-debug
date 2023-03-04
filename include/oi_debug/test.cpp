@@ -1,17 +1,23 @@
 #include "debug.hpp"
-#include <map>
-int tmp[13];
+#include <bits/stdc++.h>
 
-class A {
-public:
-    std::string to_string() const { return "A"; }
-};
+int main() {
 
-int main()
-{
-    using namespace oi_debug;
-    std::list<int> l;
-    l.push_back(1);
-    l.push_back(2);
-    debug(a);
+    std::cout << "=========Without type=========" << std::endl;
+    std::vector<std::string> strs {"Hello", ",", " world!"};
+    debug(strs);
+    std::tuple<int, double, std::vector<std::string>> tup(114514, 3.1415926535897, strs);
+    debug(tup);
+    std::map<std::string, int> m { {"China", 1}, {"America", 2}, {"Russia", 3} };
+    debug(m);
+    bool ok = true;
+    debug(ok);
+    std::cout << "==============================" << std::endl;
+    std::cout << std::endl;
+    std::cout << "=========With type=========" << std::endl;
+    debug_with_type(strs);
+    debug_with_type(tup);
+    debug_with_type(m);
+    debug_with_type(ok);
+    std::cout << "==============================" << std::endl;
 }

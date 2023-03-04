@@ -105,7 +105,7 @@ _to_string(const std::pair<T, E> &value,
 
 template <Boolean T>
 [[nodiscard]] constexpr std::string _to_string(const T value) noexcept {
-  return true_false(value);
+  return std::string(true_false(value));
 }
 
 // for map
