@@ -74,16 +74,8 @@ struct TypeParseTraits {
         }                                                                          \
     }
 
-REGISTER_PARSE_TYPE(bool);
-REGISTER_PARSE_TYPE(char);
-REGISTER_PARSE_TYPE(wchar_t);
-REGISTER_PARSE_TYPE(int);
-REGISTER_PARSE_TYPE(unsigned int);
-REGISTER_PARSE_TYPE(long);
-REGISTER_PARSE_TYPE(long long);
-REGISTER_PARSE_TYPE(unsigned long long);
-REGISTER_PARSE_TYPE(float);
-REGISTER_PARSE_TYPE(double);
+REGISTER_PARSE_TYPE(std::string);
+REGISTER_PARSE_TYPE(std::wstring);
 REGISTER_PARSE_CONTAINER_TYPE(std::vector);
 REGISTER_PARSE_CONTAINER_TYPE(std::list);
 REGISTER_PARSE_CONTAINER_TYPE(std::stack);
