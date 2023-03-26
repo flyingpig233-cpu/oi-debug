@@ -145,19 +145,18 @@ template <FIFO_Container T>
   return buffer;
 }
 
-// for container (need begin() and end())
+// for container (requires begin() and end())
 
 template <std::ranges::range T>
 [[nodiscard]] std::enable_if_t<!String<T> && !Map<T>, std::string>
 _to_string(const T &value) noexcept {
   std::string buffer;
-  auto size = std::ranges::size(value);
   buffer.append(square_brackets(0));
   for (auto &&e : value) {
     buffer.append(quoted_if_string(e));
     buffer.append(comma());
   }
-  if (size > 0)
+  if (!std::ranges::empty(value))
     buffer.erase(buffer.size() - comma().size());
   buffer.append(square_brackets(1));
   return buffer;
