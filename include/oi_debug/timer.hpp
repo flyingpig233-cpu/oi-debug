@@ -7,8 +7,10 @@
 #include <cstdlib>
 #include <cxxabi.h>
 #include <functional>
+#include <memory>
 #include <source_location>
 #include <type_traits>
+#include <typeinfo>
 #include <utility>
 
 class Timer {
@@ -36,10 +38,13 @@ template <class dur, class callable, class... Args>
 void get_time_impl(const char *postfix, const char *func_name, callable &&f,
                    Args &&...args) {
     using return_type = std::invoke_result_t<callable, Args...>;
-    const auto start_time = std::chrono::steady_clock::now();
     int status = 0;
-    char *func_type = abi::__cxa_demangle(
-        typeid(std::decay_t<callable>).name(), nullptr, nullptr, &status);
+    const char *mangled_name = typeid(std::decay_t<callable>).name();
+    const std::unique_ptr<char, decltype(&std::free)> func_type(
+        abi::__cxa_demangle(mangled_name, nullptr, nullptr, &status), &std::free);
+    const char *type_name = status == 0 && func_type
+                                ? func_type.get() : mangled_name;
+    const auto start_time = std::chrono::steady_clock::now();
 
     if constexpr (std::is_void_v<return_type>) {
         std::invoke(std::forward<callable>(f), std::forward<Args>(args)...);
@@ -47,28 +52,19 @@ void get_time_impl(const char *postfix, const char *func_name, callable &&f,
                                     std::chrono::steady_clock::now() -
                                     start_time)
                                     .count();
-        if (status == 0) {
-            printf("call %s<%s> spent %lld%s\n", func_name, func_type,
-                   static_cast<long long>(spend_time), postfix);
-        } else {
-            fprintf(stderr, "Eh...something error");
-        }
+        printf("call %s<%s> spent %lld%s\n", func_name, type_name,
+               static_cast<long long>(spend_time), postfix);
     } else {
-        auto return_val = std::invoke(std::forward<callable>(f),
-                                      std::forward<Args>(args)...);
+        decltype(auto) return_val = std::invoke(
+            std::forward<callable>(f), std::forward<Args>(args)...);
         const auto spend_time = std::chrono::duration_cast<dur>(
                                     std::chrono::steady_clock::now() -
                                     start_time)
                                     .count();
-        if (status == 0) {
-            printf("call %s<%s> spent %lld%s, return value: %s\n", func_name,
-                   func_type, static_cast<long long>(spend_time), postfix,
-                   oi_debug::to_string(return_val).c_str());
-        } else {
-            fprintf(stderr, "Eh...something error");
-        }
+        printf("call %s<%s> spent %lld%s, return value: %s\n", func_name,
+               type_name, static_cast<long long>(spend_time), postfix,
+               oi_debug::to_string(return_val).c_str());
     }
-    std::free(func_type);
 }
 
 } // namespace oi_debug

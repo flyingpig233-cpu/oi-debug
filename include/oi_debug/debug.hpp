@@ -4,18 +4,29 @@
 #include "get_type.hpp"
 #include "to_string.hpp"
 #include <iostream>
+#include <string>
 
 namespace oi_debug {
 
 template <typename T>
 inline void debug_with_type_impl(const T &t, const char *var_name) {
-    std::cout << TypeParseTraits<T>::get_name() << " " << var_name << " = "
-              << oi_debug::to_string(t) << std::endl;
+    std::string content(TypeParseTraits<T>::get_name());
+    content.push_back(' ');
+    content.append(var_name).append(" = ");
+    detail::append_to(content, t);
+    content.push_back('\n');
+    std::cout.write(content.data(),
+                    static_cast<std::streamsize>(content.size()));
 }
 
 template <typename T>
 inline void debug_impl(const T &t, const char *var_name) {
-    std::cout << var_name << " = " << oi_debug::to_string(t) << std::endl;
+    std::string content(var_name);
+    content.append(" = ");
+    detail::append_to(content, t);
+    content.push_back('\n');
+    std::cout.write(content.data(),
+                    static_cast<std::streamsize>(content.size()));
 }
 
 } // namespace oi_debug

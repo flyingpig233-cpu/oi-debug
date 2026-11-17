@@ -7,22 +7,19 @@
 
 namespace oi_debug {
 
-template <typename T>
-void put_elem(const T &elem) {
-    const auto content = to_string(elem);
+template <typename... Args>
+void print(const Args &...args) {
+    const auto content = oi_debug::concat(args...);
     std::cout.write(content.data(),
                     static_cast<std::streamsize>(content.size()));
 }
 
 template <typename... Args>
-void print(const Args &...args) {
-    (put_elem(args), ...);
-}
-
-template <typename... Args>
 void println(const Args &...args) {
-    (put_elem(args), ...);
-    put_elem(new_line());
+    auto content = oi_debug::concat(args...);
+    content.push_back('\n');
+    std::cout.write(content.data(),
+                    static_cast<std::streamsize>(content.size()));
 }
 
 } // namespace oi_debug

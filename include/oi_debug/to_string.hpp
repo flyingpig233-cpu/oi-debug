@@ -3,7 +3,6 @@
 
 #include "core.hpp"
 #include "string_concat.hpp"
-#include <algorithm>
 #include <charconv>
 #include <complex>
 #include <cstddef>
@@ -19,74 +18,49 @@
 #include <type_traits>
 #include <utility>
 #include <variant>
-#include <vector>
 
 namespace oi_debug {
+namespace detail {
 
-template <std::integral T> [[nodiscard]] std::string hex(T value) noexcept {
-  using Unsigned = std::make_unsigned_t<T>;
-  Unsigned v = static_cast<Unsigned>(value);
-  char buffer[sizeof(Unsigned) * 2]{};
-  std::size_t len = 0;
-  do {
-    buffer[len++] = digit(static_cast<std::size_t>(v & 0xF));
-    v >>= 4;
-  } while (v != 0);
-  std::reverse(buffer, buffer + len);
-  return std::string(buffer, len);
+template <typename T>
+void append_to(std::string &buffer, const T &value);
+
+template <typename T>
+void append_element(std::string &buffer, const T &value);
+
+template <std::integral T>
+requires(!Boolean<T>)
+void append_integer(std::string &buffer, T value, int base = 10) {
+  char digits[std::numeric_limits<T>::digits10 + 3];
+  const auto result = std::to_chars(digits, digits + sizeof(digits), value, base);
+  buffer.append(digits, result.ptr);
 }
-
-template <typename T>
-[[nodiscard]] constexpr inline std::string quoted_if_string(const T &value);
-
-template <typename T>
-[[nodiscard]] constexpr inline std::string to_string(const T &value);
 
 template <std::size_t N>
-[[nodiscard]] inline std::string _to_string(const char (&value)[N]) noexcept {
-  std::size_t len = 0;
-  while (len < N && value[len] != '\0') {
-    ++len;
-  }
-  return std::string(value, len);
+void append_value(std::string &buffer, const char (&value)[N]) {
+  buffer.append(string_view_of(value));
 }
 
-template <std::convertible_to<std::string_view> T>
-requires(!std::is_null_pointer_v<std::decay_t<T>> && !std::is_array_v<T>)
-[[nodiscard]] inline std::string _to_string(const T &value) noexcept {
-  if constexpr (std::is_pointer_v<T>) {
-    if (value == nullptr) {
-      return "nullptr";
-    }
-  }
-  return std::string(value);
+template <String T>
+requires(!std::is_array_v<T>)
+void append_value(std::string &buffer, const T &value) {
+  buffer.append(string_view_of(value));
 }
 
 template <has_to_string T>
-[[nodiscard]] constexpr inline std::string _to_string(T &t) noexcept {
-  return t.to_string();
+requires(!String<T>)
+void append_value(std::string &buffer, const T &value) {
+  buffer.append(value.to_string());
 }
 
-template <std::integral T, typename = std::enable_if_t<
-                               !Boolean<T> && !Character<T>, std::string>>
-[[nodiscard]] constexpr inline std::string _to_string(const T &value) noexcept {
-  return std::to_string(value);
-}
-[[nodiscard]] inline std::string
-_to_string(const char value) noexcept {
-  char c[2] {value, 0};
-  return std::string(c);
+template <std::integral T>
+requires(!Boolean<T> && !Character<T>)
+void append_value(std::string &buffer, T value) {
+  append_integer(buffer, value);
 }
 
-template <typename T>
-requires(std::is_same_v<T, float> || std::is_same_v<T, double>)
-[[nodiscard]] inline std::string _to_string(const T value) noexcept {
-  char buffer[64]{};
-  const auto result = std::to_chars(buffer, buffer + sizeof(buffer), value);
-  if (result.ec != std::errc{}) {
-    return std::to_string(value);
-  }
-  return std::string(buffer, result.ptr);
+inline void append_value(std::string &buffer, char value) {
+  buffer.push_back(value);
 }
 
 template <typename T>
@@ -94,288 +68,289 @@ concept to_chars_supported = requires(char *first, char *last, T value) {
   std::to_chars(first, last, value);
 };
 
-template <typename T>
-requires(std::is_same_v<T, long double>)
-[[nodiscard]] inline std::string _to_string(const T value) noexcept {
-  char buffer[128]{};
+template <std::floating_point T>
+void append_value(std::string &buffer, T value) {
+  char digits[std::numeric_limits<T>::max_digits10 + 32];
   if constexpr (to_chars_supported<T>) {
-    const auto result = std::to_chars(buffer, buffer + sizeof(buffer), value);
+    const auto result = std::to_chars(digits, digits + sizeof(digits), value);
     if (result.ec == std::errc{}) {
-      return std::string(buffer, result.ptr);
+      buffer.append(digits, result.ptr);
+      return;
     }
   }
   const auto written = std::snprintf(
-      buffer, sizeof(buffer), "%.*Lg",
-      std::numeric_limits<long double>::max_digits10, value);
+      digits, sizeof(digits), "%.*Lg", std::numeric_limits<T>::max_digits10,
+      static_cast<long double>(value));
   if (written > 0) {
-    return std::string(buffer, static_cast<std::size_t>(written));
+    const auto size = static_cast<std::size_t>(written);
+    if (size < sizeof(digits)) {
+      buffer.append(digits, size);
+    } else {
+      const auto offset = buffer.size();
+      buffer.resize(offset + size);
+      std::snprintf(buffer.data() + offset, size + 1, "%.*Lg",
+                    std::numeric_limits<T>::max_digits10,
+                    static_cast<long double>(value));
+    }
   }
-  return {};
 }
 
-[[nodiscard]] inline std::string _to_string(std::nullptr_t) noexcept {
-  return "nullptr";
+inline void append_value(std::string &buffer, std::nullptr_t) {
+  buffer.append("nullptr");
 }
 
-[[nodiscard]] inline std::string _to_string(std::nullopt_t) noexcept {
-  return "std::nullopt";
+inline void append_value(std::string &buffer, std::nullopt_t) {
+  buffer.append("std::nullopt");
 }
 
-[[nodiscard]] inline std::string _to_string(std::monostate) noexcept {
-  return "monostate";
+inline void append_value(std::string &buffer, std::monostate) {
+  buffer.append("monostate");
 }
 
-// for pointer
-[[nodiscard]] inline std::string
-_to_string(const void *pointer) noexcept {
-  return connect("0x", hex(reinterpret_cast<std::uintptr_t>(pointer)));
-}
-
-// for smart pointers
-template <typename T, typename Deleter>
-requires(!std::is_array_v<T> && !std::is_void_v<T>)
-[[nodiscard]] inline std::string
-_to_string(const std::unique_ptr<T, Deleter> &pointer) {
-  return pointer ? quoted_if_string(*pointer) : std::string("nullptr");
+inline void append_value(std::string &buffer, const volatile void *pointer) {
+  if (pointer == nullptr) {
+    buffer.append("nullptr");
+  } else {
+    buffer.append("0x");
+    append_integer(buffer, reinterpret_cast<std::uintptr_t>(pointer), 16);
+  }
 }
 
 template <typename T, typename Deleter>
-requires(std::is_array_v<T> || std::is_void_v<T>)
-[[nodiscard]] inline std::string
-_to_string(const std::unique_ptr<T, Deleter> &pointer) {
-  return pointer
-             ? connect("0x",
-                       hex(reinterpret_cast<std::uintptr_t>(pointer.get())))
-             : std::string("nullptr");
+void append_value(std::string &buffer,
+                  const std::unique_ptr<T, Deleter> &pointer) {
+  if (!pointer) {
+    buffer.append("nullptr");
+  } else if constexpr (std::is_array_v<T> || std::is_void_v<T>) {
+    append_value(buffer, static_cast<const volatile void *>(pointer.get()));
+  } else {
+    append_element(buffer, *pointer);
+  }
 }
 
 template <typename T>
-requires(!std::is_array_v<T> && !std::is_void_v<T>)
-[[nodiscard]] inline std::string _to_string(const std::shared_ptr<T> &pointer) {
-  return pointer ? quoted_if_string(*pointer) : std::string("nullptr");
+void append_value(std::string &buffer, const std::shared_ptr<T> &pointer) {
+  if (!pointer) {
+    buffer.append("nullptr");
+  } else if constexpr (std::is_array_v<T> || std::is_void_v<T>) {
+    append_value(buffer, static_cast<const volatile void *>(pointer.get()));
+  } else {
+    append_element(buffer, *pointer);
+  }
 }
 
 template <typename T>
-requires(std::is_array_v<T> || std::is_void_v<T>)
-[[nodiscard]] inline std::string _to_string(const std::shared_ptr<T> &pointer) {
-  return pointer
-             ? connect("0x",
-                       hex(reinterpret_cast<std::uintptr_t>(pointer.get())))
-             : std::string("nullptr");
-}
-
-template <typename T>
-[[nodiscard]] inline std::string _to_string(const std::weak_ptr<T> &pointer) {
+void append_value(std::string &buffer, const std::weak_ptr<T> &pointer) {
   const auto locked = pointer.lock();
-  return locked ? to_string(locked) : std::string("expired");
-}
-
-// for c style array
-template <typename T, size_t N>
-[[nodiscard]] std::enable_if_t<String<T>, std::string>
-_to_string(const T (&arr)[N]) {
-  std::string buff;
-  buff.append(square_brackets(0));
-  for (size_t i = 0; i < N - 1; ++i) {
-    buff.append(quoted_if_string(arr[i]));
-    buff.append(comma());
+  if (locked) {
+    append_value(buffer, locked);
+  } else {
+    buffer.append("expired");
   }
-  buff.append(quoted_if_string(arr[N - 1]));
-  buff.append(square_brackets(1));
-  return buff;
 }
 
-// for pair
-
-template <typename T, typename E>
-[[nodiscard]] constexpr std::string
-_to_string(const std::pair<T, E> &value,
-           const std::string_view &split_c = comma()) noexcept {
-  return oi_debug::connect(brackets(0), quoted_if_string(value.first), split_c,
-                           quoted_if_string(value.second), brackets(1));
+template <typename T, typename U>
+void append_value(std::string &buffer, const std::pair<T, U> &value) {
+  buffer.append(brackets(0));
+  append_element(buffer, value.first);
+  buffer.append(comma());
+  append_element(buffer, value.second);
+  buffer.append(brackets(1));
 }
-
-// for optional
 
 template <typename T>
-[[nodiscard]] inline std::string
-_to_string(const std::optional<T> &value) {
-  return value ? connect("optional(", quoted_if_string(*value), ")")
-               : std::string("std::nullopt");
+void append_value(std::string &buffer, const std::optional<T> &value) {
+  if (value) {
+    buffer.append("optional(");
+    append_element(buffer, *value);
+    buffer.push_back(')');
+  } else {
+    buffer.append("std::nullopt");
+  }
 }
-
-// for variant
 
 template <typename... Ts>
-[[nodiscard]] inline std::string
-_to_string(const std::variant<Ts...> &value) {
+void append_value(std::string &buffer, const std::variant<Ts...> &value) {
   if (value.valueless_by_exception()) {
-    return "valueless variant";
+    buffer.append("valueless variant");
+  } else {
+    buffer.append("variant(");
+    std::visit([&](const auto &alternative) {
+      append_element(buffer, alternative);
+    }, value);
+    buffer.push_back(')');
   }
-  return std::visit(
-      [](const auto &alternative) {
-        return connect("variant(", quoted_if_string(alternative), ")");
-      },
-      value);
 }
-
-// for complex
 
 template <typename T>
-[[nodiscard]] inline std::string
-_to_string(const std::complex<T> &value) {
-  return connect(brackets(0), to_string(value.real()), comma(),
-                 to_string(value.imag()), brackets(1));
+void append_value(std::string &buffer, const std::complex<T> &value) {
+  buffer.append(brackets(0));
+  append_to(buffer, value.real());
+  buffer.append(comma());
+  append_to(buffer, value.imag());
+  buffer.append(brackets(1));
 }
 
-// for bool
-
 template <Boolean T>
-[[nodiscard]] constexpr std::string _to_string(const T value) noexcept {
-  return std::string(true_false(value));
+void append_value(std::string &buffer, T value) {
+  buffer.append(true_false(value));
 }
 
 template <typename T>
 requires(std::is_enum_v<T>)
-[[nodiscard]] inline std::string _to_string(const T value) noexcept {
-  return std::to_string(static_cast<std::underlying_type_t<T>>(value));
+void append_value(std::string &buffer, T value) {
+  append_to(buffer, +static_cast<std::underlying_type_t<T>>(value));
 }
 
-// for map
-
-template <Map T> [[nodiscard]] std::string _to_string(const T &value) noexcept {
-  std::string buffer;
-  auto size = value.size();
-  if (size > 10) {
-    buffer.reserve(size * 3);
-  }
+template <Map T>
+requires(!String<T> && !has_to_string<T>)
+void append_value(std::string &buffer, const T &value) {
   buffer.append(curly_braces(0));
-  for (auto &&e : value) {
-    buffer.append(quoted_if_string(e.first));
+  bool first = true;
+  for (auto &&entry : value) {
+    if (!first) {
+      buffer.append(comma());
+    }
+    first = false;
+    append_element(buffer, entry.first);
     buffer.append(colon());
-    buffer.append(quoted_if_string(e.second));
-    buffer.append(comma());
+    append_element(buffer, entry.second);
   }
-  if (size > 0)
-    buffer.erase(buffer.size() - comma().size());
   buffer.append(curly_braces(1));
-  return buffer;
 }
-
-// for FIFO Container (like std::queue)
 
 template <FIFO_Container T>
-[[nodiscard]] std::string _to_string(T value) noexcept {
-  std::string buffer;
+requires(!String<T> && !has_to_string<T>)
+void append_value(std::string &buffer, T value) {
   buffer.append(square_brackets(0));
+  bool first = true;
   while (!value.empty()) {
-    buffer.append(quoted_if_string(value.front()));
-    value.pop();
-    if (!value.empty())
+    if (!first) {
       buffer.append(comma());
-  }
-  buffer.append(square_brackets(1));
-  return buffer;
-}
-
-// for container (requires begin() and end())
-
-template <std::ranges::range T>
-[[nodiscard]] std::enable_if_t<!String<T> && !Map<T>, std::string>
-_to_string(const T &value) noexcept {
-  std::string buffer;
-  buffer.append(square_brackets(0));
-  for (auto &&e : value) {
-    buffer.append(quoted_if_string(e));
-    buffer.append(comma());
-  }
-  if (!std::ranges::empty(value))
-    buffer.erase(buffer.size() - comma().size());
-  buffer.append(square_brackets(1));
-  return buffer;
-}
-
-// for LIFO Container (like stack)
-template <LIFO_Container T>
-[[nodiscard]] std::string _to_string(T value) noexcept {
-  std::vector<typename T::value_type> v;
-  while (!value.empty()) {
-    v.push_back(value.top());
+    }
+    first = false;
+    append_element(buffer, value.front());
     value.pop();
   }
-  return to_string(v);
+  buffer.append(square_brackets(1));
 }
 
-// for tuple
-
-template <typename T, size_t N> struct tuple_to_string {
-  static void to_string(const T &tup, std::string &buff);
-};
-
-template <typename T> struct tuple_to_string<T, 1> {
-  static void to_string(const T &tup, std::string &buff);
-};
-
-template <typename... Args>
-[[nodiscard]] OI_DEBUG_FORCE_INLINE std::string
-_to_string(const std::tuple<Args...> &value) {
-  constexpr size_t size = sizeof...(Args);
-  static_assert(size < 20, "too large tuple!!!");
-  std::string buff;
-  buff.append(brackets(0));
-  if constexpr (size > 0) {
-    tuple_to_string<decltype(value), size>::to_string(value, buff);
+template <typename T>
+requires(std::ranges::input_range<const T> && !String<T> &&
+         !Map<T> && !has_to_string<T>)
+void append_value(std::string &buffer, const T &value) {
+  buffer.append(square_brackets(0));
+  bool first = true;
+  for (auto &&element : value) {
+    if (!first) {
+      buffer.append(comma());
+    }
+    first = false;
+    append_element(buffer, element);
   }
-  buff.append(brackets(1));
-  return buff;
+  buffer.append(square_brackets(1));
 }
 
-template <typename T, size_t N>
-void tuple_to_string<T, N>::to_string(const T &tup, std::string &buff) {
-  tuple_to_string<T, N - 1>::to_string(tup, buff);
-  buff.append(comma());
-  buff.append(oi_debug::quoted_if_string(std::get<N - 1>(tup)));
+template <LIFO_Container T>
+requires(!String<T> && !has_to_string<T>)
+void append_value(std::string &buffer, T value) {
+  buffer.append(square_brackets(0));
+  bool first = true;
+  while (!value.empty()) {
+    if (!first) {
+      buffer.append(comma());
+    }
+    first = false;
+    append_element(buffer, value.top());
+    value.pop();
+  }
+  buffer.append(square_brackets(1));
 }
 
-template <typename T>
-void tuple_to_string<T, 1>::to_string(const T &tup, std::string &buff) {
-  buff.append(oi_debug::quoted_if_string(std::get<0>(tup)));
+template <typename... Ts>
+void append_value(std::string &buffer, const std::tuple<Ts...> &value) {
+  buffer.append(brackets(0));
+  if constexpr (sizeof...(Ts) > 0) {
+    std::apply([&](const auto &...elements) {
+      bool first = true;
+      const auto append = [&](const auto &element) {
+        if (!first) {
+          buffer.append(comma());
+        }
+        first = false;
+        append_element(buffer, element);
+      };
+      (append(elements), ...);
+    }, value);
+  }
+  buffer.append(brackets(1));
 }
 
-template <typename T>
-concept convertible = requires(T &&a) { oi_debug::_to_string(a); };
+} // namespace detail
 
 template <typename T>
-[[nodiscard]] constexpr inline std::string to_string(const T &value) {
-  constexpr bool ok = convertible<T>;
-  if constexpr (ok) {
-    return _to_string(value);
+concept convertible = requires(std::string &buffer, const T &value) {
+  { detail::append_value(buffer, value) } -> std::same_as<void>;
+};
+
+namespace detail {
+
+template <typename T>
+void append_to(std::string &buffer, const T &value) {
+  if constexpr (convertible<T>) {
+    append_value(buffer, value);
   } else {
-    static_assert(ok, "some types could not convert");
-    return {};
+    static_assert(convertible<T>, "some types could not convert");
   }
 }
 
 template <typename T>
-[[nodiscard]] std::string constexpr inline quoted_if_string(const T &value) {
+void append_element(std::string &buffer, const T &value) {
   if constexpr (String<T>) {
     if constexpr (std::is_pointer_v<T>) {
       if (value == nullptr) {
-        return "nullptr";
+        buffer.append("nullptr");
+        return;
       }
     }
-    return oi_debug::quoted(oi_debug::to_string(value));
+    append_quoted(buffer, string_view_of(value));
+  } else if constexpr (Character<T>) {
+    append_quoted(buffer, std::string_view(&value, 1), quotes());
+  } else {
+    append_to(buffer, value);
   }
-  if constexpr (std::is_same_v<char, T>) {
-    char arr[2]{value, 0};
-    return oi_debug::quoted(std::string(arr), quotes());
-  }
-  return oi_debug::to_string(value);
+}
+
+} // namespace detail
+
+template <std::integral T>
+requires(!Boolean<T>)
+[[nodiscard]] inline std::string hex(T value) {
+  std::string buffer;
+  detail::append_integer(buffer,
+                         static_cast<std::make_unsigned_t<T>>(value), 16);
+  return buffer;
+}
+
+template <typename T>
+[[nodiscard]] inline std::string to_string(const T &value) {
+  std::string buffer;
+  detail::append_to(buffer, value);
+  return buffer;
+}
+
+template <typename T>
+[[nodiscard]] inline std::string quoted_if_string(const T &value) {
+  std::string buffer;
+  detail::append_element(buffer, value);
+  return buffer;
 }
 
 template <typename... Args>
-[[nodiscard]] constexpr std::string concat(const Args &...v) {
-  return connect(to_string(v)...);
+[[nodiscard]] inline std::string concat(const Args &...values) {
+  std::string buffer;
+  (detail::append_to(buffer, values), ...);
+  return buffer;
 }
 
 } // namespace oi_debug
