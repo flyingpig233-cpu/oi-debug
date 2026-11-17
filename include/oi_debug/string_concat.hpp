@@ -1,8 +1,8 @@
-#ifndef _OIDEBUG_STRING_CONCAT_H__
-#define _OIDEBUG_STRING_CONCAT_H__
+#ifndef OI_DEBUG_STRING_CONCAT_HPP
+#define OI_DEBUG_STRING_CONCAT_HPP
 
 #include "core.hpp"
-#include <cassert>
+#include <ranges>
 #include <string>
 #include <string_view>
 
@@ -69,4 +69,4 @@ quoted(const std::string_view &v,
 
 } // namespace oi_debug
 
-#endif //_OIDEBUG_STRING_CONCAT_H__
+#endif // OI_DEBUG_STRING_CONCAT_HPP

@@ -1,14 +1,20 @@
-#ifndef _OIDEBUG_CORE_H__
-#define _OIDEBUG_CORE_H__
+#ifndef OI_DEBUG_CORE_HPP
+#define OI_DEBUG_CORE_HPP
 
 #include <concepts>
+#include <cstddef>
+#include <ranges>
 #include <string>
 #include <string_view>
 #include <type_traits>
 
 namespace oi_debug {
 
-#define __FORCE_INLINE__ __attribute__((always_inline))
+#if defined(__GNUC__) || defined(__clang__)
+#define OI_DEBUG_FORCE_INLINE __attribute__((always_inline)) inline
+#else
+#define OI_DEBUG_FORCE_INLINE inline
+#endif
 
 template <typename T>
 concept Character = std::is_same_v<T, char>;
@@ -20,7 +26,8 @@ template <typename T>
 concept Boolean = std::is_same_v<bool, std::decay_t<T>>;
 
 template <typename T>
-concept String = std::convertible_to<T, std::string_view>;
+concept String = !std::is_null_pointer_v<std::decay_t<T>> &&
+                 std::convertible_to<T, std::string_view>;
 
 template <typename T>
 concept has_to_string = requires(T &&a) {
@@ -86,4 +93,4 @@ constexpr char digit(size_t i) {
 
 } // namespace oi_debug
 
-#endif //_OIDEBUG_CORE_H__
+#endif // OI_DEBUG_CORE_HPP

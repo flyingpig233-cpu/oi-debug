@@ -50,7 +50,7 @@ bool ok = true
 ```
 
 ## 特点
-支持几乎所有STL容器（包括pair和tuple）以及基本类型，甚至是形如`int a[][][][][][]`这样的无限嵌套
+支持几乎所有STL容器，以及pair/tuple、optional、variant、complex、智能指针、枚举和基本类型（含`long double`），甚至是形如`int a[][][][][][]`这样的无限嵌套
 
 ## 提示
 您在写题目的时候可以这样
@@ -67,7 +67,7 @@ bool ok = true
 本代码使用了`concept`等只有**C++20**及以上版本才支持的新特性，在编译代码时必须加上`-std=c++20`选项
 
 ## 警告
-本库目前不支持`MSVC`编译器（原因是调用了`CXXABI`库来获取变量名）
+本库尚未在 `MSVC` 上验证；`timer.hpp` 依赖 `__cxa_demangle`，无法在 `MSVC` 下编译。仅使用 `debug.hpp` 时也请自行验证。
 
 ## 贡献
 如果您对这个库满意的话，可以留下您的star哦，希望能帮到您～

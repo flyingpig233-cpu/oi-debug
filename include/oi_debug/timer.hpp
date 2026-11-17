@@ -1,69 +1,86 @@
-#ifndef _BGHELPER_TIMER_H__
-#define _BGHELPER_TIMER_H__
+#ifndef OI_DEBUG_TIMER_HPP
+#define OI_DEBUG_TIMER_HPP
 
-#include <bits/chrono.h>
+#include "to_string.hpp"
 #include <chrono>
 #include <cstdio>
+#include <cstdlib>
 #include <cxxabi.h>
 #include <functional>
-#include <iostream>
 #include <source_location>
-#include "to_string.hpp"
+#include <type_traits>
+#include <utility>
 
 class Timer {
   private:
     std::source_location _location;
-    std::chrono::system_clock::time_point _start_time;
+    std::chrono::steady_clock::time_point _start_time;
 
   public:
     Timer(const std::source_location location = std::source_location::current())
-        : _location(location), _start_time(std::chrono::system_clock::now()) {}
+        : _location(location), _start_time(std::chrono::steady_clock::now()) {}
     ~Timer() {
-        auto end_time = std::chrono::system_clock::now();
-        auto spend_time = std::chrono::duration_cast<std::chrono::microseconds>(
-            end_time - _start_time);
-        printf("It took %ldus to call %s function in %s\n", spend_time,
-               _location.function_name(), _location.file_name());
+        const auto spend_time =
+            std::chrono::duration_cast<std::chrono::microseconds>(
+                std::chrono::steady_clock::now() - _start_time)
+                .count();
+        printf("It took %lldus to call %s function in %s\n",
+               static_cast<long long>(spend_time), _location.function_name(),
+               _location.file_name());
     }
 };
 
-template <class dur, class callable,  class... Args>
-void _get_time(const char *postfix, const char *func_name, callable &&f, Args &&...args) {
-    using return_type = typename std::result_of<callable(Args...)>::type;
-    std::function<return_type(Args...)> func = f;
+namespace oi_debug {
 
-    auto start_time = std::chrono::system_clock::now();
-    if constexpr (!std::is_same_v<return_type, void>) {
-        auto return_val = func(std::forward<Args&&>(args)...);
-        auto end_time = std::chrono::high_resolution_clock::now();
-        auto spend_time = std::chrono::duration_cast<dur>(
-            end_time - start_time);
-        int status;
-        char *func_type =
-            abi::__cxa_demangle(typeid(callable).name(), NULL, NULL, &status);
+template <class dur, class callable, class... Args>
+void get_time_impl(const char *postfix, const char *func_name, callable &&f,
+                   Args &&...args) {
+    using return_type = std::invoke_result_t<callable, Args...>;
+    const auto start_time = std::chrono::steady_clock::now();
+    int status = 0;
+    char *func_type = abi::__cxa_demangle(
+        typeid(std::decay_t<callable>).name(), nullptr, nullptr, &status);
+
+    if constexpr (std::is_void_v<return_type>) {
+        std::invoke(std::forward<callable>(f), std::forward<Args>(args)...);
+        const auto spend_time = std::chrono::duration_cast<dur>(
+                                    std::chrono::steady_clock::now() -
+                                    start_time)
+                                    .count();
         if (status == 0) {
-            printf("call %s<%s> spent %ld%s, return value: %s\n", func_name, func_type, spend_time, postfix, oi_debug::to_string(return_val).c_str());
+            printf("call %s<%s> spent %lld%s\n", func_name, func_type,
+                   static_cast<long long>(spend_time), postfix);
         } else {
             fprintf(stderr, "Eh...something error");
         }
     } else {
-        func(std::forward<Args&&>(args)...);
-        auto end_time = std::chrono::system_clock::now();
-        auto spend_time = std::chrono::duration_cast<dur>(
-            end_time - start_time);
-        int status;
-        char *func_type =
-            abi::__cxa_demangle(typeid(callable).name(), NULL, NULL, &status);
+        auto return_val = std::invoke(std::forward<callable>(f),
+                                      std::forward<Args>(args)...);
+        const auto spend_time = std::chrono::duration_cast<dur>(
+                                    std::chrono::steady_clock::now() -
+                                    start_time)
+                                    .count();
         if (status == 0) {
-            printf("call %s<%s> spent %ld%s\n", func_name, func_type, spend_time, postfix);
-            free(func_type);
+            printf("call %s<%s> spent %lld%s, return value: %s\n", func_name,
+                   func_type, static_cast<long long>(spend_time), postfix,
+                   oi_debug::to_string(return_val).c_str());
         } else {
             fprintf(stderr, "Eh...something error");
         }
     }
+    std::free(func_type);
 }
-#define get_time_us(fn, ...) _get_time<std::chrono::microseconds>("us", #fn, (fn), ##__VA_ARGS__)
-#define get_time_ms(fn, ...) _get_time<std::chrono::milliseconds>("ms", #fn, (fn), ##__VA_ARGS__)
-#define get_time_s(fn, ...) _get_time<std::chrono::seconds>("s", #fn, (fn), ##__VA_ARGS__)
 
-#endif //_BGHELPER_TIMER_H__
+} // namespace oi_debug
+
+#define get_time_us(fn, ...)                                                   \
+    oi_debug::get_time_impl<std::chrono::microseconds>(                        \
+        "us", #fn, (fn) __VA_OPT__(, ) __VA_ARGS__)
+#define get_time_ms(fn, ...)                                                   \
+    oi_debug::get_time_impl<std::chrono::milliseconds>(                        \
+        "ms", #fn, (fn) __VA_OPT__(, ) __VA_ARGS__)
+#define get_time_s(fn, ...)                                                    \
+    oi_debug::get_time_impl<std::chrono::seconds>(                             \
+        "s", #fn, (fn) __VA_OPT__(, ) __VA_ARGS__)
+
+#endif // OI_DEBUG_TIMER_HPP
