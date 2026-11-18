@@ -14,6 +14,7 @@
 #include <stack>
 #include <stdexcept>
 #include <string>
+#include <tuple>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -241,14 +242,21 @@ void check_exceptions_and_output() {
     expect_throw(std::variant<ThrowingValue, int>{});
     Capture capture;
     const char nul = '\0';
+    const auto state = std::tuple{7, 1.25, std::vector<std::string>{"ready"}};
+    const bool ok = true;
     debug(nul);
     debug_with_type(std::vector<int>{1, 2});
+    debug_with_type(state);
+    debug_with_type(ok);
     oi_debug::print("a", 1);
     oi_debug::println("b", 2);
     oi_debug::println();
     std::string expected("nul = ");
     expected.push_back('\0');
-    expected.append("\nstd::vector<int> std::vector<int>{1, 2} = [1, 2]\na1b2\n\n");
+    expected.append("\nstd::vector<int> std::vector<int>{1, 2} = [1, 2]\n"
+                    "std::tuple<int, double, std::vector<std::string>> state = (7, 1.25, [\"ready\"])\n"
+                    "bool ok = true\n"
+                    "a1b2\n\n");
     assert(capture.str() == expected);
     assert(capture.flushes() == 0);
     const auto before = capture.str();
