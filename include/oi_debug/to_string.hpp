@@ -2,6 +2,7 @@
 #define OI_DEBUG_TO_STRING_HPP
 
 #include "core.hpp"
+#include "fields.hpp"
 #include "string_concat.hpp"
 #include <charconv>
 #include <complex>
@@ -51,6 +52,23 @@ template <has_to_string T>
 requires(!String<T>)
 void append_value(std::string &buffer, const T &value) {
   buffer.append(value.to_string());
+}
+
+template <registered_fields T>
+requires(!String<T> && !has_to_string<T>)
+void append_value(std::string &buffer, const T &value) {
+  buffer.append(field_traits<std::remove_cvref_t<T>>::name);
+  buffer.push_back('{');
+  bool first = true;
+  visit_fields(value, [&](std::string_view name, const auto &field) {
+    if (!first) {
+      buffer.append(comma());
+    }
+    first = false;
+    buffer.append(name).append(colon());
+    append_element(buffer, field);
+  });
+  buffer.push_back('}');
 }
 
 template <std::integral T>
@@ -203,7 +221,7 @@ void append_value(std::string &buffer, T value) {
 }
 
 template <Map T>
-requires(!String<T> && !has_to_string<T>)
+requires(!String<T> && !has_to_string<T> && !registered_fields<T>)
 void append_value(std::string &buffer, const T &value) {
   buffer.append(curly_braces(0));
   bool first = true;
@@ -220,7 +238,7 @@ void append_value(std::string &buffer, const T &value) {
 }
 
 template <FIFO_Container T>
-requires(!String<T> && !has_to_string<T>)
+requires(!String<T> && !has_to_string<T> && !registered_fields<T>)
 void append_value(std::string &buffer, T value) {
   buffer.append(square_brackets(0));
   bool first = true;
@@ -237,7 +255,7 @@ void append_value(std::string &buffer, T value) {
 
 template <typename T>
 requires(std::ranges::input_range<const T> && !String<T> &&
-         !Map<T> && !has_to_string<T>)
+         !Map<T> && !has_to_string<T> && !registered_fields<T>)
 void append_value(std::string &buffer, const T &value) {
   buffer.append(square_brackets(0));
   bool first = true;
@@ -252,7 +270,7 @@ void append_value(std::string &buffer, const T &value) {
 }
 
 template <LIFO_Container T>
-requires(!String<T> && !has_to_string<T>)
+requires(!String<T> && !has_to_string<T> && !registered_fields<T>)
 void append_value(std::string &buffer, T value) {
   buffer.append(square_brackets(0));
   bool first = true;

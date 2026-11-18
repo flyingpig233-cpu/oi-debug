@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  regressions:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: GCC 14
+            compiler: g++-14
+            options: ""
+          - name: Clang 18
+            compiler: clang++-18
+            options: ""
+          - name: Clang 18 with sanitizers
+            compiler: clang++-18
+            options: --sanitize
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Run regressions
+        env:
+          COMPILER: ${{ matrix.compiler }}
+          TEST_OPTIONS: ${{ matrix.options }}
+        run: |
+          "$COMPILER" --version
+          if [ -n "$TEST_OPTIONS" ]; then
+            python3 tests/run.py "$TEST_OPTIONS" "$COMPILER"
+          else
+            python3 tests/run.py "$COMPILER"
+          fi

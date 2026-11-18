@@ -257,6 +257,67 @@ void check_exceptions_and_output() {
     assert(capture.str() == before);
 }
 
+void check_slices() {
+    Capture capture;
+    static const int a[200'005] = {0, 10, 20, 30};
+    debug_slice(a, 1, 3);
+    debug_slice(a, 1, 0);
+    debug_slice(a, -1, 2);
+    debug_slice(a, 0, 200'005);
+    debug_slice(a, 3, 1);
+
+    const std::vector<int> empty;
+    debug_slice(empty, 0, -1);
+
+    const char chars[] = {'x', '\n', '\0'};
+    debug_slice(chars, 1, 2);
+    const int rows[][2] = {{1, 2}, {3, 4}};
+    debug_slice(rows, 1, 1);
+
+    int calls = 0, left = 1, right = 2;
+    const auto array = [&]() -> const auto & { ++calls; return a; };
+    debug_slice(array(), left++, right++);
+    assert(calls == 1 && left == 2 && right == 3);
+    assert(capture.str() ==
+           "a[1..3] = [10, 20, 30]\n"
+           "a[1..0] = []\n"
+           "a[-1..2] = slice error: invalid interval for size 200005\n"
+           "a[0..200005] = slice error: invalid interval for size 200005\n"
+           "a[3..1] = slice error: invalid interval for size 200005\n"
+           "empty[0..-1] = []\n"
+           "chars[1..2] = ['\\n', '\\0']\n"
+           "rows[1..1] = [[3, 4]]\n"
+           "array()[1..2] = [10, 20]\n");
+}
+
+void check_matrix_slices() {
+    Capture capture;
+    const int dp[3][4] = {{}, {0, 10, 20, 30}, {0, 40, 50, 60}};
+    int row_first = 1, row_last = 2, col_first = 1, col_last = 3;
+    debug_slice(dp, row_first++, row_last++, col_first++, col_last++);
+    assert(row_first == 2 && row_last == 3 && col_first == 2 && col_last == 4);
+
+    debug_slice(dp, 1, 0, 1, 3);
+    debug_slice(dp, 1, 2, 1, 0);
+    debug_slice(dp, 1, 3, 1, 3);
+    debug_slice(dp, 1, 2, -1, 0);
+
+    const std::vector<std::vector<std::string>> ragged{
+        {}, {"skip", "a\n", "b"}, {"skip"}
+    };
+    debug_slice(ragged, 1, 1, 1, 2);
+    debug_slice(ragged, 1, 2, 1, 2);
+
+    assert(capture.str() ==
+           "dp[1..2][1..3] = [[10, 20, 30], [40, 50, 60]]\n"
+           "dp[1..0][1..3] = []\n"
+           "dp[1..2][1..0] = [[], []]\n"
+           "dp[1..3][1..3] = slice error: invalid row interval for size 3\n"
+           "dp[1..2][-1..0] = slice error: invalid column interval for row 1 of size 4\n"
+           "ragged[1..1][1..2] = [[\"a\\n\", \"b\"]]\n"
+           "ragged[1..2][1..2] = slice error: invalid column interval for row 2 of size 1\n");
+}
+
 int main() {
     check_text();
     check_values();
@@ -264,5 +325,7 @@ int main() {
     check_pointers();
     check_connect();
     check_exceptions_and_output();
+    check_slices();
+    check_matrix_slices();
     std::cout << "serialization checks passed\n";
 }

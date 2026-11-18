@@ -9,7 +9,8 @@ import subprocess
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
-HEADERS = ("core", "debug", "get_type", "output", "string_concat", "timer", "to_string")
+HEADERS = ("core", "debug", "fields", "matrix", "diff", "get_type", "output",
+           "string_concat", "timer", "to_string")
 
 
 def execute(command, *, source=None, env=None):
@@ -20,6 +21,13 @@ def execute(command, *, source=None, env=None):
     return result.stdout
 
 
+def readme_block(readme, marker, language):
+    pattern = rf"<!-- {marker} -->\n```{re.escape(language)}\n(.*?)```"
+    match = re.search(pattern, readme, re.S)
+    assert match, f"README block missing: {marker}"
+    return match.group(1)
+
+
 def check_compiler(compiler, directory, sanitize):
     flags = [compiler, "-std=c++20", "-Wall", "-Wextra", "-pedantic", "-Werror",
              "-I", str(ROOT / "include")]
@@ -28,22 +36,24 @@ def check_compiler(compiler, directory, sanitize):
     env["UBSAN_OPTIONS"] = "halt_on_error=1"
     sanitizer_flags = (["-fsanitize=address,undefined", "-fno-omit-frame-pointer"]
                        if sanitize else [])
-    for name in ("regression", "timer"):
+    for name in ("regression", "timer", "fields", "matrix", "diff"):
         binary = directory / name
         execute([*flags, *sanitizer_flags, str(ROOT / "tests" / f"{name}.cpp"),
                  "-o", str(binary)])
         output = execute([str(binary)], env=env)
         if name == "regression":
             assert output == "serialization checks passed\n", output
-        else:
+        elif name == "timer":
             assert re.search(r"call return_reference<.*> spent \d+us, return value: 42\n", output), output
             assert re.search(r"call return_owned<.*> spent \d+us, return value: 7\n", output), output
             assert re.search(r"call take_owned<.*> spent \d+ms\n", output), output
             assert re.search(r"call return_number<.*> spent \d+s, return value: 3\n", output), output
             assert output.endswith("timer checks passed\n"), output
+        else:
+            assert output == f"{name} checks passed\n", output
         print(f"{compiler}: {name} passed", flush=True)
 
-    readme = (ROOT / "README.md").read_text()
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
     golden = directory / "sample"
     execute([*flags, str(ROOT / "include/oi_debug/test.cpp"), "-o", str(golden)])
     expected = (ROOT / "tests/sample.txt").read_text()
@@ -53,12 +63,18 @@ def check_compiler(compiler, directory, sanitize):
         execute([*flags, "-fsyntax-only", "-x", "c++", "-"],
                 source=f'#include "oi_debug/{header}.hpp"\nint main() {{}}\n')
 
-    judge_sample = re.search(r"```c\+\+\n(.*?)```", readme, re.S).group(1)
-    documented_output = re.search(r"```text\n(.*?)```", readme, re.S).group(1)
     for defines in ([], ["-DONLINE_JUDGE"]):
-        binary = directory / "readme_sample"
-        execute([*flags, *defines, "-x", "c++", "-", "-o", str(binary)], source=judge_sample)
-        assert execute([str(binary)]) == ("" if defines else documented_output), "README example output mismatch"
+        for example in ("quickstart", "showcase"):
+            source = readme_block(readme, f"{example}-source", "c++")
+            expected = "" if defines else readme_block(readme, f"{example}-output", "text")
+            binary = directory / example
+            execute([*flags, *defines, "-x", "c++", "-", "-o", str(binary)], source=source)
+            assert execute([str(binary)]) == expected, f"README {example} output mismatch"
+
+        binary = directory / "knapsack"
+        execute([*flags, *defines, str(ROOT / "examples/knapsack.cpp"), "-o", str(binary)])
+        expected = "" if defines else readme_block(readme, "knapsack-output", "text")
+        assert execute([str(binary)]) == expected, "Knapsack example output mismatch"
 
     unsupported = {
         "mutable_member": 'struct X { std::string to_string() { return "x"; } };\nint main(){(void)oi_debug::to_string(X{});}',
@@ -74,11 +90,31 @@ def check_compiler(compiler, directory, sanitize):
         assert result.returncode != 0, f"{name}: unsupported input unexpectedly accepted"
         assert "some types could not convert" in result.stderr, result.stderr
 
+    unsupported_diff = {
+        "uncomparable": 'struct X { std::string to_string() const { return "x"; } };\nint main(){(void)oi_debug::diff(X{},X{});}',
+        "smart_pointer": 'int main(){std::shared_ptr<int> p; (void)oi_debug::diff(p,p);}',
+        "nested_uncomparable": 'struct X { std::string to_string() const { return "x"; } };\nint main(){std::vector<X> v; (void)oi_debug::diff(v,v);}',
+    }
+    for name, body in unsupported_diff.items():
+        result = subprocess.run([*flags, "-fsyntax-only", "-x", "c++", "-"],
+                                input='#include "oi_debug/diff.hpp"\n' + body,
+                                text=True, capture_output=True, timeout=60)
+        assert result.returncode != 0, f"{name}: unsupported diff unexpectedly accepted"
+        assert "oi_debug::diff: unsupported leaf type" in result.stderr, result.stderr
+
     includes = "".join(f'#include "oi_debug/{header}.hpp"\n' for header in HEADERS)
     first = directory / "first.cpp"
     second = directory / "second.cpp"
-    first.write_text(includes + '#include <vector>\nstd::string other(){return oi_debug::to_string(std::vector<int>{1,2});}\n')
-    second.write_text(includes + 'std::string other();\nint main(){return other() == "[1, 2]" ? 0 : 1;}\n')
+    fixture_header = f'#include "{ROOT / "tests/registered.hpp"}"\n'
+    first.write_text(includes + fixture_header +
+                     'std::string other(){return oi_debug::to_string(fixture::Record{1,{2,3}});}\n')
+    reverse_includes = "".join(f'#include "oi_debug/{header}.hpp"\n' for header in reversed(HEADERS))
+    second.write_text(reverse_includes + fixture_header +
+                      'std::string other();\nint main(){fixture::Record a{1,{2,3}}, b{2,{2,3}}; '
+                      'const int grid[1][1]={{1}}; '
+                      'return other() == "fixture::Record{value: 1, samples: [2, 3]}" && '
+                      'oi_debug::diff(a,b).changes.size() == 1 && '
+                      'oi_debug::matrix_to_string(grid).size() > 0 ? 0 : 1;}\n')
     binary = directory / "two_tu"
     execute([*flags, str(first), str(second), "-o", str(binary)])
     execute([str(binary)])
