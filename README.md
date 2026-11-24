@@ -19,13 +19,16 @@
 
 ## 目录
 
-- [0/1 背包错误演示](#用-01-背包定位错误) · [快速开始](#快速开始)
+- [使用案例](#使用案例) · [快速开始](#快速开始)
+- [0/1 背包](#用-01-背包定位错误) · [前缀和区间](#检查前缀和的有效区间) · [Dijkstra 出队顺序](#检查-dijkstra-的边和出队顺序)
 - [数组区间](#打印数组区间) · [类型支持](#类型支持) · [结构体字段](#结构体字段注册)
 - [矩阵展示](#矩阵展示) · [状态差异比较](#状态差异比较) · [完整示例](#完整示例观察一次-dp-状态更新)
 - [项目结构](#项目结构) · [设计思路](#设计思路) · [使用约定](#使用约定)
 - [质量验证](#质量验证) · [贡献与许可](#贡献与许可)
 
-## 用 0/1 背包定位错误
+## 使用案例
+
+### 用 0/1 背包定位错误
 
 只有一件重量为 2、价值为 3 的物品，背包容量为 4，答案应为 3。转移时误读当前行 `dp[1][capacity - weight]`，程序却算出了 6。用 `debug_diff(expected, dp)` 比较参考表和实际表，再用 `debug_matrix` 高亮差异对应的坐标。
 
@@ -47,6 +50,72 @@ dp =
 g++ -std=c++20 -Iinclude examples/knapsack.cpp -o /tmp/oi-debug-knapsack
 /tmp/oi-debug-knapsack
 ```
+
+### 检查前缀和的有效区间
+
+原数组从下标 1 开始，只有 3 项，前缀和数组按数据上限分配。用 `debug_slice` 并排核对两个数组的有效区间。
+
+```c++
+#include "oi_debug/debug.hpp"
+
+int main() {
+    constexpr int n = 3;
+    int a[] = {0, 2, 5, 7};
+    static int prefix[200'005];
+
+    for (int i = 1; i <= n; ++i) {
+        prefix[i] = a[i - 1] + a[i];  // 错误：只加了相邻两项
+    }
+    debug_slice(a, 1, n);
+    debug_slice(prefix, 1, n);
+}
+```
+
+```text
+a[1..3] = [2, 5, 7]
+prefix[1..3] = [2, 7, 12]
+```
+
+第三项应累加 `2 + 5 + 7` 得到 `14`。将递推式改为 `prefix[i - 1] + a[i]`，让前一项的累计结果参与计算。
+
+### 检查 Dijkstra 的边和出队顺序
+
+起点到节点 2 和 3 的边权分别为 4 和 10。用 `OI_DEBUG_FIELDS` 注册边的字段，再用 `debug` 检查起点的邻接表和优先队列的出队顺序。`debug_with_type` 同时确认堆顶距离的类型和值。
+
+```c++
+#include <queue>
+#include <utility>
+#include <vector>
+#include "oi_debug/debug.hpp"
+
+struct Edge {
+    int to;
+    long long weight;
+};
+OI_DEBUG_FIELDS(Edge, to, weight);
+
+int main() {
+    std::vector<Edge> edges{{2, 4}, {3, 10}};
+    using Entry = std::pair<long long, int>;  // (距离, 节点)
+    std::priority_queue<Entry> pending;
+    for (const auto &edge : edges) {
+        pending.emplace(edge.weight, edge.to);
+    }
+    debug(edges);
+    debug(pending);
+    debug_with_type(pending.top().first);
+}
+```
+
+```text
+edges = [Edge{to: 2, weight: 4}, Edge{to: 3, weight: 10}]
+pending = [(10, 3), (4, 2)]
+long long pending.top().first = 10
+```
+
+上面是 Clang 的输出，GCC 会将 `long long` 显示为 `long long int`。
+
+堆顶是距离为 10 的节点，而 Dijkstra 应先取距离为 4 的节点。引入 `<functional>`，将队列声明改为 `std::priority_queue<Entry, std::vector<Entry>, std::greater<Entry>>`，使距离较小的项排在堆顶。
 
 ## 快速开始
 
