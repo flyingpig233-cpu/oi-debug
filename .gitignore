@@ -32,3 +32,5 @@
 *.app
 
 AGENTS.md
+
+.vscode/
